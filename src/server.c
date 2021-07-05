@@ -8,6 +8,14 @@
 #define PORT 8080
 
 
+// TO COMPILE:
+// gcc client.c -o client
+// gcc server.c -o server
+
+// TO RUN:
+// Two separate terminals, one running ./server and the other ./client
+
+
 int main(int argc, char const *argv[])
 {
     int server_fd, new_socket, valread;
