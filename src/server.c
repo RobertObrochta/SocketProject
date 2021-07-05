@@ -8,9 +8,8 @@
 #define PORT 8080
 
 
-// TO COMPILE:
-// gcc client.c -o client
-// gcc server.c -o server
+// TO COMPILE: (added in Makefile)
+// make (within ../src)
 
 // TO RUN:
 // Two separate terminals, one running ./server and the other ./client
