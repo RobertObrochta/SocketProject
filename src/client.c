@@ -44,10 +44,42 @@ int recvFile(char* buf, int s)
     }
     return 0;
 }
+
+// Verify by entering a password
+int passwordVerif(const char pass_file[80]){
+    char scan_pword[80]; // password is stored here
+    FILE * verif_file;
+    verif_file = fopen(pass_file, "r");
+    char pword_guess[80]; // user guess of what the password is
+
+    // scan the password from the text file
+    fgets(scan_pword, 80, verif_file);
+    printf("This is the password: %s\n", scan_pword);
+
+    // user inputs their guess
+    printf("Please enter your password for entry: ");
+    scanf("%s", &pword_guess);
+    fclose(verif_file);
+
+    if (*pword_guess != *scan_pword){ // wrong attempt
+        return 1;
+    }             
+    
+    // correct attempt
+    return 0;
+    
+}
   
 // driver code
 int main()
 {
+    char pass_file[13] = "password.txt";
+    int verify = passwordVerif(pass_file);
+    if (verify == 1){
+        printf("Password is incorrect; closing...\n");
+        return 1;
+    }
+
     struct dirent *de;
     DIR *dr = opendir(".");
     while ((de = readdir(dr)) != NULL){
