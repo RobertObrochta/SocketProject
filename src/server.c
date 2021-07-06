@@ -1,11 +1,3 @@
-#include <unistd.h>
-#include <stdio.h>
-#include <sys/socket.h>
-#include <stdlib.h>
-#include <netinet/in.h>
-#include <string.h>
-
-#define PORT 8080
 
 
 // TO COMPILE: (added in Makefile)
@@ -13,56 +5,129 @@
 
 // TO RUN:
 // Two separate terminals, one running ./server and the other ./client
-
-
-int main(int argc, char const *argv[])
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
+  
+#define IP_PROTOCOL 0
+#define PORT_NO 15050
+#define NET_BUF_SIZE 32
+#define cipherKey 'S'
+#define sendrecvflag 0
+#define nofile "File Not Found!"
+#define is_directory "%s is a directory.\n"
+  
+// function to clear buffer
+void clearBuf(char* b)
 {
-    int server_fd, new_socket, valread;
-    struct sockaddr_in address;
-    int opt = 1;
-    int addrlen = sizeof(address);
-    char buffer[1024] = {0};
-    char *hello = "Hello from server";
-       
-    // Creating socket file descriptor
-    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
-    {
-        perror("socket failed");
-        exit(EXIT_FAILURE);
+    int i;
+    for (i = 0; i < NET_BUF_SIZE; i++)
+        b[i] = '\0';
+}
+  
+// function to encrypt
+char Cipher(char ch)
+{
+    return ch ^ cipherKey;
+}
+  
+// function sending file
+int sendFile(FILE* fp, char* buf, int s)
+{
+    int i, len;
+    if (fp == NULL) {
+        strcpy(buf, nofile);
+        len = strlen(nofile);
+        buf[len] = EOF;
+        for (i = 0; i <= len; i++)
+            buf[i] = Cipher(buf[i]);
+        return 1;
     }
-       
-    // Forcefully attaching socket to the port 8080
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT,
-                                                  &opt, sizeof(opt)))
-    {
-        perror("setsockopt");
-        exit(EXIT_FAILURE);
+
+  
+    char ch, ch2;
+    for (i = 0; i < s; i++) {
+        ch = fgetc(fp);
+        ch2 = Cipher(ch);
+        buf[i] = ch2;
+        if (ch == EOF)
+            return 1;
     }
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons( PORT );
-       
-    // Forcefully attaching socket to the port 8080
-    if (bind(server_fd, (struct sockaddr *)&address, 
-                                 sizeof(address))<0)
-    {
-        perror("bind failed");
-        exit(EXIT_FAILURE);
+    return 0;
+}
+  
+// driver code
+int main()
+{  
+    int sockfd, nBytes;
+    struct sockaddr_in addr_con;
+    int addrlen = sizeof(addr_con);
+    addr_con.sin_family = AF_INET;
+    addr_con.sin_port = htons(PORT_NO);
+    addr_con.sin_addr.s_addr = INADDR_ANY;
+    char net_buf[NET_BUF_SIZE];
+    FILE* fp;
+  
+    // socket()
+    sockfd = socket(AF_INET, SOCK_DGRAM, IP_PROTOCOL);
+  
+    if (sockfd < 0)
+        printf("\nfile descriptor not received!!\n");
+    else
+        printf("\nfile descriptor %d received\n", sockfd);
+  
+    // bind()
+    if (bind(sockfd, (struct sockaddr*)&addr_con, sizeof(addr_con)) == 0)
+        printf("\nSuccessfully binded!\n");
+    else{
+        printf("\nBinding Failed!\n");
+        return 0;
     }
-    if (listen(server_fd, 3) < 0)
-    {
-        perror("listen");
-        exit(EXIT_FAILURE);
+  
+    while (1) {
+        printf("\nWaiting for file name...\n");
+  
+        // receive file name
+        clearBuf(net_buf);
+  
+        nBytes = recvfrom(sockfd, net_buf,
+                          NET_BUF_SIZE, sendrecvflag,
+                          (struct sockaddr*)&addr_con, &addrlen);
+  
+        fp = fopen(net_buf, "r");
+        printf("\nFile Name Received: %s\n", net_buf);
+        if (!strstr(net_buf, ".")){
+            printf(is_directory, net_buf);
+        }
+
+        if (fp == NULL)
+            printf("\nFile open failed!\n");
+        else
+            printf("\nFile Successfully opened!\n");
+  
+        while (1) {
+  
+            // process
+            if (sendFile(fp, net_buf, NET_BUF_SIZE)) {
+                sendto(sockfd, net_buf, NET_BUF_SIZE,
+                       sendrecvflag, 
+                    (struct sockaddr*)&addr_con, addrlen);
+                break;
+            }
+  
+            // send
+            sendto(sockfd, net_buf, NET_BUF_SIZE,
+                   sendrecvflag,
+                (struct sockaddr*)&addr_con, addrlen);
+            clearBuf(net_buf);
+        }
+        if (fp != NULL)
+            fclose(fp);
     }
-    if ((new_socket = accept(server_fd, (struct sockaddr *)&address, 
-                       (socklen_t*)&addrlen))<0)
-    {
-        perror("accept");
-        exit(EXIT_FAILURE);
-    }
-    valread = read( new_socket , buffer, 1024);
-    printf("%s\n",buffer );
-    send(new_socket , hello , strlen(hello) , 0 );
-    printf("Hello message sent\n");
     return 0;
 }
