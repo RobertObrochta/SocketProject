@@ -78,15 +78,15 @@ int main()
     sockfd = socket(AF_INET, SOCK_DGRAM, IP_PROTOCOL);
   
     if (sockfd < 0)
-        printf("\nfile descriptor not received!!\n");
+        printf("\nFile descriptor not received!\n");
     else
-        printf("\nfile descriptor %d received\n", sockfd);
+        printf("\nFile descriptor %d received.\n", sockfd);
   
     // bind()
     if (bind(sockfd, (struct sockaddr*)&addr_con, sizeof(addr_con)) == 0)
         printf("\nSuccessfully binded!\n");
     else{
-        printf("\nBinding Failed!\n");
+        printf("\nBinding Failed. Terminating process.\n");
         return 0;
     }
   

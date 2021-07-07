@@ -54,14 +54,13 @@ int passwordVerif(const char pass_file[80]){
 
     // scan the password from the text file
     fgets(scan_pword, 80, verif_file);
-    printf("This is the password: %s\n", scan_pword);
 
     // user inputs their guess
     printf("Please enter your password for entry: ");
     scanf("%s", &pword_guess);
     fclose(verif_file);
 
-    if (*pword_guess != *scan_pword){ // wrong attempt
+    if (strcmp(scan_pword, pword_guess) != 0){ // wrong attempt
         return 1;
     }             
     
@@ -76,16 +75,9 @@ int main()
     char pass_file[13] = "password.txt";
     int verify = passwordVerif(pass_file);
     if (verify == 1){
-        printf("Password is incorrect; closing...\n");
+        printf("Password is incorrect. Terminating connection.\n");
         return 1;
     }
-
-    struct dirent *de;
-    DIR *dr = opendir(".");
-    while ((de = readdir(dr)) != NULL){
-            printf("%s\n", de->d_name);
-    }
-    closedir(dr);  
 
     int sockfd, nBytes;
     struct sockaddr_in addr_con;
